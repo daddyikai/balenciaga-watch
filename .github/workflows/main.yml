@@ -2,8 +2,14 @@ name: Balenciaga Bag Watch
 
 on:
   schedule:
+    # Runs at :00 and :30 every hour (UTC). Adjust as you like.
     - cron: "*/5 * * * *"
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      test_mode:
+        description: "Send a test notification issue instead of checking the site"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -28,6 +34,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
+          TEST_MODE: ${{ inputs.test_mode }}
         working-directory: scripts
         run: python check_balenciaga.py
 
@@ -38,5 +45,3 @@ jobs:
           git add state.json
           git diff --quiet --cached || git commit -m "chore: update state [skip ci]"
           git push
-
-
