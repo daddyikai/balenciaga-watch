@@ -1,0 +1,31 @@
+name: Weekly Market Report
+
+on:
+  schedule:
+    # Saturday 08:00 Asia/Taipei (UTC+8) = Saturday 00:00 UTC
+    - cron: "0 0 * * 6"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Generate & send weekly report
+        working-directory: scripts
+        env:
+          GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          REPORT_RECIPIENT: yikai0825@gmail.com
+        run: python weekly_report.py
