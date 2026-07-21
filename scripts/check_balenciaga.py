@@ -69,6 +69,27 @@ def create_github_issue(title, body):
 
 
 def main():
+    # Manual test path: lets you verify the GitHub Issue -> email pipeline
+    # without depending on live site data. Triggered via workflow_dispatch
+    # input test_mode=true. Posts as github-actions[bot], same as a real
+    # alert, so it actually exercises the notification path (unlike an
+    # issue you create yourself, which GitHub won't email you about).
+    if os.environ.get("TEST_MODE") == "true":
+        title = f"[Balenciaga Watch] 測試通知 {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}"
+        body = (
+            "這是透過 workflow_dispatch test_mode 觸發的測試通知,"
+            "確認 Issue 建立 -> email 通知這條路徑正常。\n\n"
+            "範例格式:\n"
+            "- BALENCIAGA / 後背包 — NT$15,000\n"
+            "  https://store.2ndstreet.com.tw/SalePage/Index/12345678"
+        )
+        print(body)
+        if os.environ.get("GITHUB_TOKEN"):
+            create_github_issue(title, body)
+        else:
+            print("(GITHUB_TOKEN not set — skipping issue creation, local run)", file=sys.stderr)
+        return
+
     state = load_state()
     seen = set(state.get("seen_matching_ids", []))
 
