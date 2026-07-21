@@ -5,6 +5,23 @@ without a browser.
 """
 import re
 
+# Brands to watch. Any category counts (bags, shoes, clothing, accessories,
+# etc.) — not limited to bags. Matched case-insensitively against the
+# brand text as shown on the site.
+WATCHED_BRANDS = {
+    "BALENCIAGA",
+    "TOGA",
+    "MAISON MARGIELA",
+    "GUIDI",
+    "OAKLEY",
+    "ACNE STUDIOS",
+    "RICK OWENS",
+    "PRADA",
+    "VETEMENTS",
+    "VIVIENNE WESTWOOD",
+    "OUR LEGACY",
+}
+
 
 def extract_id(href: str):
     m = re.search(r"SalePage/Index/(\d+)", href)
@@ -51,15 +68,11 @@ def parse_entry(href: str, text: str):
     }
 
 
-def is_matching_bag(item: dict, price_limit: int = 20000) -> bool:
+def is_matching_item(item: dict, price_limit: int = 20000) -> bool:
+    """Any category counts — brand + price is all that matters now."""
     if item is None:
         return False
-    if item["brand"] != "BALENCIAGA":
-        return False
-    cat = item["category"]
-    if "包" not in cat:
-        return False
-    if "錢包" in cat or "夾" in cat:
+    if item["brand"].strip().upper() not in WATCHED_BRANDS:
         return False
     if item["price"] > price_limit:
         return False
@@ -71,6 +84,6 @@ def find_matching_items(raw_entries, price_limit: int = 20000):
     matches = []
     for e in raw_entries:
         item = parse_entry(e["href"], e["text"])
-        if item and is_matching_bag(item, price_limit):
+        if item and is_matching_item(item, price_limit):
             matches.append(item)
     return matches

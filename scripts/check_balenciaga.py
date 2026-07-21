@@ -1,5 +1,6 @@
 """
-Checks store.2ndstreet.com.tw for newly-listed Balenciaga bags <= NT$20,000.
+Checks store.2ndstreet.com.tw for newly-listed items <= NT$20,000 from any
+brand in parse.WATCHED_BRANDS (any category — not limited to bags).
 
 Runs headless (Playwright/Chromium) since the site is a client-rendered SPA
 (product data is not present in the raw HTML, only after JS executes).
@@ -105,7 +106,7 @@ def main():
     state["last_checked"] = datetime.now(timezone.utc).isoformat()
 
     if new_items:
-        lines = [f"發現 {len(new_items)} 個新的 Balenciaga 包(<= NT${PRICE_LIMIT:,}):\n"]
+        lines = [f"發現 {len(new_items)} 個新品項(<= NT${PRICE_LIMIT:,}):\n"]
         for it in new_items:
             lines.append(f"- {it['brand']} / {it['category']} — NT${it['price']:,}\n  {it['href']}")
         body = "\n".join(lines)
