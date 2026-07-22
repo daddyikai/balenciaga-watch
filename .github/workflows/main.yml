@@ -2,7 +2,7 @@ name: Balenciaga Bag Watch
 
 on:
   schedule:
-    # Runs at :00 and :30 every hour (UTC). Adjust as you like.
+    # Runs at :00 and :30 every hour (UTC). Adjust as you like. (re-saved)
     - cron: "*/5 * * * *"
   workflow_dispatch:
     inputs:
