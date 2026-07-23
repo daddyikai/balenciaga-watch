@@ -53,6 +53,9 @@ def fetch_entries():
                     "els => els.map(a => ({href: a.href, text: a.textContent.trim()}))",
                 )
                 all_entries.extend(entries)
+                print(f"DEBUG: brand '{brand}' -> {len(entries)} entries, url={url}", file=sys.stderr)
+                if entries:
+                    print(f"DEBUG:   first entry: {entries[0]}", file=sys.stderr)
             except Exception as e:
                 print(f"WARNING: failed to fetch brand '{brand}': {e}", file=sys.stderr)
         browser.close()
