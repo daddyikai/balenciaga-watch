@@ -5,6 +5,14 @@ brand in parse.WATCHED_BRANDS (any category — not limited to bags).
 Runs headless (Playwright/Chromium) since the site is a client-rendered SPA
 (product data is not present in the raw HTML, only after JS executes).
 
+Strategy: instead of scanning the site-wide "new arrivals" feed (which only
+ever shows the newest ~100 items across ALL brands/categories - with 1000+
+items total and constant turnover, a watched-brand item can silently fall
+out of that window within a day, especially if a check gets delayed), we
+query each watched brand's own "newest" search results. Each brand only
+competes against its own listings (typically a few hundred), so items stay
+visible far longer and are much less likely to be missed between checks.
+
 On new matches, creates a GitHub Issue in this repo (which triggers GitHub's
 built-in email notification to anyone watching the repo). State is persisted
 in state.json and committed back by the workflow.
@@ -13,30 +21,51 @@ import json
 import os
 import sys
 import urllib.request
+import urllib.parse
 from datetime import datetime, timezone
 
-from parse import find_matching_items
+from parse import find_matching_items, WATCHED_BRANDS
 
-URL = "https://store.2ndstreet.com.tw/V2/Official/SalePageCategory/442464?o=n&m=s&shopId=41320&sortMode=Newest"
+SHOP_ID = "41320"
 STATE_PATH = os.path.join(os.path.dirname(__file__), "..", "state.json")
 PRICE_LIMIT = 20000
+
+
+def brand_search_url(brand: str) -> str:
+    q = urllib.parse.quote(f'"{brand}"')
+    return f"https://store.2ndstreet.com.tw/v2/Search?q={q}&shopId={SHOP_ID}&order=Newest"
 
 
 def fetch_entries():
     from playwright.sync_api import sync_playwright
 
+    all_entries = []
     with sync_playwright() as p:
         browser = p.chromium.launch()
         page = browser.new_page()
-        page.goto(URL, wait_until="networkidle", timeout=60000)
-        # give the SPA a moment to paint the list after network idle
-        page.wait_for_timeout(2000)
-        entries = page.eval_on_selector_all(
-            'a[href*="SalePage/Index"]',
-            "els => els.map(a => ({href: a.href, text: a.textContent.trim()}))",
-        )
+        for brand in sorted(WATCHED_BRANDS):
+            url = brand_search_url(brand)
+            try:
+                page.goto(url, wait_until="networkidle", timeout=60000)
+                page.wait_for_timeout(1500)
+                entries = page.eval_on_selector_all(
+                    'a[href*="SalePage/Index"]',
+                    "els => els.map(a => ({href: a.href, text: a.textContent.trim()}))",
+                )
+                all_entries.extend(entries)
+            except Exception as e:
+                print(f"WARNING: failed to fetch brand '{brand}': {e}", file=sys.stderr)
         browser.close()
-        return entries
+
+    # de-dupe by href (a brand with an ambiguous name or a re-listed item
+    # could otherwise show up more than once across separate brand queries)
+    seen_hrefs = set()
+    deduped = []
+    for e in all_entries:
+        if e["href"] not in seen_hrefs:
+            seen_hrefs.add(e["href"])
+            deduped.append(e)
+    return deduped
 
 
 def load_state():
