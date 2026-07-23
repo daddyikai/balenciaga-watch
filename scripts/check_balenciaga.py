@@ -140,7 +140,12 @@ def main():
     if new_items:
         lines = [f"發現 {len(new_items)} 個新品項(<= NT${PRICE_LIMIT:,}):\n"]
         for it in new_items:
-            lines.append(f"- {it['brand']} / {it['category']} — NT${it['price']:,}\n  {it['href']}")
+            price_note = (
+                f"約 NT${it['price']:,}(美元換算,僅供參考)"
+                if it.get("currency") == "USD"
+                else f"NT${it['price']:,}"
+            )
+            lines.append(f"- {it['brand']} / {it['category']} — {price_note}\n  {it['href']}")
         body = "\n".join(lines)
         print(body)
 

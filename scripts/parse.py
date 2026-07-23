@@ -22,6 +22,16 @@ WATCHED_BRANDS = {
     "OUR LEGACY",
 }
 
+# The site auto-picks a display currency based on the visitor's apparent
+# location. A browser session in Taiwan sees "NT$"; a GitHub Actions runner
+# (US/international IPs) sees "US$" instead - same item, no NT$ price shown
+# at all. We can't reliably force the site back to TWD from a headless
+# runner, so instead we accept either currency and convert USD to an
+# approximate TWD figure for the price-limit check. The rate is a rough
+# approximation (rounded), not a live FX rate - fine for a "<= NT$X" cutoff,
+# not fine for precise pricing.
+USD_TO_TWD_RATE = 32.5
+
 
 def extract_id(href: str):
     m = re.search(r"SalePage/Index/(\d+)", href)
@@ -53,10 +63,17 @@ def parse_entry(href: str, text: str):
     brand = parts[0].strip()
     category = parts[1].strip()
 
-    prices = re.findall(r"NT\$([\d,]+)", text)
-    if not prices:
-        return None
-    price = int(prices[-1].replace(",", ""))
+    twd_prices = re.findall(r"NT\$([\d,]+)", text)
+    if twd_prices:
+        price = int(twd_prices[-1].replace(",", ""))
+        currency = "TWD"
+    else:
+        usd_prices = re.findall(r"US\$([\d,.]+)", text)
+        if not usd_prices:
+            return None
+        usd_amount = float(usd_prices[-1].replace(",", ""))
+        price = round(usd_amount * USD_TO_TWD_RATE)
+        currency = "USD"
 
     return {
         "id": item_id,
@@ -65,6 +82,7 @@ def parse_entry(href: str, text: str):
         "brand": brand,
         "category": category,
         "price": price,
+        "currency": currency,
     }
 
 
