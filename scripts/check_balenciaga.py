@@ -36,9 +36,12 @@ PRICE_LIMIT = 20000
 
 
 def new_arrivals_url() -> str:
+    # NOTE: must include the "/v2/official" prefix - the old bare
+    # "/SalePageCategory/..." path 404s (site was restructured at some
+    # point). Verified working: https://store.2ndstreet.com.tw/v2/official/SalePageCategory/442464?sortMode=Newest
     return (
-        f"https://store.2ndstreet.com.tw/SalePageCategory/{NEW_ARRIVALS_CATEGORY_ID}"
-        f"?o=n&m=s&shopId={SHOP_ID}&sortMode=Newest"
+        f"https://store.2ndstreet.com.tw/v2/official/SalePageCategory/{NEW_ARRIVALS_CATEGORY_ID}"
+        f"?sortMode=Newest"
     )
 
 
