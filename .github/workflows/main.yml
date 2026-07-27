@@ -3,6 +3,7 @@ name: Balenciaga Bag Watch
 on:
   schedule:
     # Every 15 min, Mon-Fri, 12:00-19:00 Taipei (UTC+8) = 04:00-11:00 UTC. Off-peak minutes (:03/:18/:33/:48) to avoid GitHub's busy top-of-hour queue.
+    # re-registered 2026-07-27 14:35 Taipei - schedule had silently stopped firing since Jul 25.
     - cron: "3,18,33,48 4-11 * * 1-5"
   workflow_dispatch:
     inputs:
