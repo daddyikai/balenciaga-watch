@@ -2,25 +2,16 @@
 Parsing logic for 2ndstreet.com.tw product listing entries.
 Kept separate from the Playwright fetch code so it can be unit-tested
 without a browser.
+
+Two independent requirements are supported:
+1. find_new_arrivals(): ANY newly-listed item, any brand, any category,
+   any price. No filtering at all beyond skipping sold-out/unparseable
+   entries. Meant to be run against the site-wide "new arrivals" feed.
+2. find_balenciaga_bags(): ONLY BALENCIAGA-brand items whose category
+   looks like a bag (category text contains "包"), priced at or below
+   price_limit. Meant to be run against a BALENCIAGA-only search feed.
 """
 import re
-
-# Brands to watch. Any category counts (bags, shoes, clothing, accessories,
-# etc.) — not limited to bags. Matched case-insensitively against the
-# brand text as shown on the site.
-WATCHED_BRANDS = {
-    "BALENCIAGA",
-    "TOGA",
-    "MAISON MARGIELA",
-    "GUIDI",
-    "OAKLEY",
-    "ACNE STUDIOS",
-    "RICK OWENS",
-    "PRADA",
-    "VETEMENTS",
-    "VIVIENNE WESTWOOD",
-    "OUR LEGACY",
-}
 
 # The site auto-picks a display currency based on the visitor's apparent
 # location. A browser session in Taiwan sees "NT$"; a GitHub Actions runner
@@ -86,22 +77,34 @@ def parse_entry(href: str, text: str):
     }
 
 
-def is_matching_item(item: dict, price_limit: int = 20000) -> bool:
-    """Any category counts — brand + price is all that matters now."""
+def is_balenciaga_bag(item: dict, price_limit: int = 20000) -> bool:
+    """需求二: 僅 BALENCIAGA 包款, price <= price_limit."""
     if item is None:
         return False
-    if item["brand"].strip().upper() not in WATCHED_BRANDS:
+    if item["brand"].strip().upper() != "BALENCIAGA":
+        return False
+    if "包" not in item["category"]:
         return False
     if item["price"] > price_limit:
         return False
     return True
 
 
-def find_matching_items(raw_entries, price_limit: int = 20000):
-    """raw_entries: list of {"href": ..., "text": ...} as extracted from the page."""
-    matches = []
+def find_new_arrivals(raw_entries):
+    """需求一: 任何新上架品項,不分品牌、不分價格 (只跳過已售完/無法解析的)."""
+    items = []
     for e in raw_entries:
         item = parse_entry(e["href"], e["text"])
-        if item and is_matching_item(item, price_limit):
-            matches.append(item)
-    return matches
+        if item:
+            items.append(item)
+    return items
+
+
+def find_balenciaga_bags(raw_entries, price_limit: int = 20000):
+    """需求二: 僅 BALENCIAGA 包款, <= price_limit."""
+    items = []
+    for e in raw_entries:
+        item = parse_entry(e["href"], e["text"])
+        if item and is_balenciaga_bag(item, price_limit):
+            items.append(item)
+    return items
