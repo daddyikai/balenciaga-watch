@@ -7,7 +7,9 @@ brand, any category, any price. Uses the shared "新品上架"/new-arrivals
 category feed, which only ever shows the newest ~100 items site-wide. That
 is fine here because this requirement only cares about "what's new since
 last check", checked every 15 minutes - it will never need to look past
-the first page.
+the first page. Notification is intentionally just a headcount + link to
+the new-arrivals page (no itemized list) - the user checks the page
+themselves rather than reading a per-item breakdown in the email.
 
 需求二 (balenciaga_bag): ONLY BALENCIAGA-brand items whose category text
 contains "包" (i.e. any kind of bag/wallet/pouch), priced at or below
@@ -188,12 +190,13 @@ def main():
     has_token = bool(os.environ.get("GITHUB_TOKEN"))
     ts = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')
 
-    # 需求一: 任何新品上架,不分品牌不分價格
+    # 需求一: 任何新品上架,不分品牌不分價格。只提醒「有新品」,不列出每一筆
+    # 品項明細 — 使用者會自己到官網首頁/新品上架頁面看,不需要逐筆列出。
     if fresh_new_arrivals:
-        lines = [f"【需求一:新品上架】發現 {len(fresh_new_arrivals)} 個新上架品項(不分品牌/價格):\n"]
-        for it in fresh_new_arrivals:
-            lines.append(f"- {it['brand']} / {it['category']} — {_price_note(it)}\n  {it['href']}")
-        body = "\n".join(lines)
+        body = (
+            f"發現 {len(fresh_new_arrivals)} 個新品上架,請至新品上架頁面查看:\n"
+            f"{new_arrivals_url()}"
+        )
         print(body)
         if has_token:
             title = f"[新品上架] {len(fresh_new_arrivals)} 個新品 {ts}"
